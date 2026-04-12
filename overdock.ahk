@@ -1316,7 +1316,7 @@ class OverDockApp {
         if (Config.General.HasProp("AutoHide") && Config.General.AutoHide) {
             sens := Config.General.HasProp("AutoHideSens") ? Config.General.AutoHideSens : 1
             delay := Config.General.HasProp("AutoHideDelay") ? Config.General.AutoHideDelay : 300
-            
+
             isHoveringBar := false
             if (mWin == this.Gui.Hwnd) {
                 isHoveringBar := true
@@ -1327,11 +1327,11 @@ class OverDockApp {
             } else if (this.ActivePopup || (HasProp(this, "ActiveDropdown") && this.ActiveDropdown)) {
                 isHoveringBar := true
             }
-            
+
             if (isHoveringBar) {
                 if (!HasProp(this, "HoverStartTime"))
                     this.HoverStartTime := A_TickCount
-                
+
                 if (A_TickCount - this.HoverStartTime >= delay) {
                     if (!HasProp(this, "BarVisible") || !this.BarVisible) {
                         this.BarVisible := true
@@ -1750,7 +1750,7 @@ LoadConfig() {
         IniWrite("0", IniFile, "General", "DropShadows")
         IniWrite("0", IniFile, "General", "VisualDebug")
         IniWrite("E700", IniFile, "General", "HomeIcon")
-        
+
         IniWrite("0", IniFile, "General", "AutoHide")
         IniWrite("1", IniFile, "General", "AutoHideSens")
         IniWrite("300", IniFile, "General", "AutoHideDelay")
@@ -1846,7 +1846,7 @@ LoadConfig() {
 
     leftOrdStr := IniRead(IniFile, "Plugins", "LeftOrder", "NOT_FOUND")
     if (leftOrdStr == "NOT_FOUND") {
-        leftOrdStr := "StartMenu,ExplorerContextual"
+        leftOrdStr := "LinksMenu,ExplorerContextual"
         IniWrite(leftOrdStr, IniFile, "Plugins", "LeftOrder")
     }
     cfg.Plugins.LeftOrder := StrSplit(leftOrdStr, ",", " `t")

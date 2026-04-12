@@ -1,6 +1,6 @@
 #Include ../overdock.ahk
 
-class StartMenuPlugin extends OverDockPlugin {
+class LinksMenuPlugin extends OverDockPlugin {
     static Version := "1.0"
     static Description := "Launch the Windows start menu."
     W := 40
