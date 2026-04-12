@@ -21,7 +21,12 @@ class WebNowPlayingPlugin extends OverDockPlugin {
         this.MarqTimer := ObjBindMethod(this, "TickMarquee")
         valTick := Integer(this.GetConfig("MarqueeTickSpeed", "300"))
         SetTimer(this.MarqTimer, valTick > 0 ? valTick : 300)
-        this.ConnectWS()
+        
+        this.ServerEnabled := this.GetConfig("ServerEnabled", 0)
+        if (this.ServerEnabled)
+            this.ConnectWS()
+        else
+            this.CStatus := "Server Disabled (Enable in Settings)"
     }
 
     Destroy() {
@@ -54,10 +59,10 @@ class WebNowPlayingPlugin extends OverDockPlugin {
             this.WSSrv.onClientConnect := ObjBindMethod(this, "OnClientConnect")
             this.CStatus := "Awaiting connection (" port ")"
         } catch as err {
-            this.CStatus := "Failed to bind port " port
+            this.CStatus := "Failed to bind port " port " (Check Firewall)"
             this.WSSrv := ""
-            SetTimer(ObjBindMethod(this, "ConnectWS"), -5000)
         }
+        this.NeedsUpdate := true
     }
 
     OnClientConnect(srv, client) {
@@ -196,10 +201,13 @@ class WebNowPlayingPlugin extends OverDockPlugin {
         s := this.App.Scale
         this.ShowOnlyWhenPlaying := this.GetConfig("ShowOnlyWhenPlaying", 0)
         this.ShowArtworkPopup := this.GetConfig("ShowArtworkPopup", 1)
+        this.ServerEnabled := this.GetConfig("ServerEnabled", 0)
         this.MarqueeWidth := this.GetConfig("MarqueeWidth", "150")
         this.ArtworkPopupDuration := this.GetConfig("ArtworkPopupDuration", "5")
         this.Port := this.GetConfig("Port", "8973")
 
+        this.AddCheckbox(gui, Round(15 * s), yP, Round(240 * s), Round(25 * s), this, "ServerEnabled", "Enable WNP WebSocket Server")
+        yP += Round(30 * s)
         this.AddCheckbox(gui, Round(15 * s), yP, Round(240 * s), Round(25 * s), this, "ShowOnlyWhenPlaying", "Auto-hide when not playing")
         yP += Round(30 * s)
         this.AddCheckbox(gui, Round(15 * s), yP, Round(240 * s), Round(25 * s), this, "ShowArtworkPopup", "Popup Artwork on track change")
@@ -238,6 +246,20 @@ class WebNowPlayingPlugin extends OverDockPlugin {
     SaveCustomConfig() {
         this.SetConfig("ShowOnlyWhenPlaying", this.ShowOnlyWhenPlaying)
         this.SetConfig("ShowArtworkPopup", this.ShowArtworkPopup)
+        
+        if (this.ServerEnabled != this.GetConfig("ServerEnabled", 0)) {
+            this.SetConfig("ServerEnabled", this.ServerEnabled)
+            if (this.ServerEnabled)
+                this.ConnectWS()
+            else {
+                if this.WSSrv {
+                    try this.WSSrv.__Delete()
+                    this.WSSrv := ""
+                }
+                this.CStatus := "Server Disabled (Enable in Settings)"
+                this.NeedsUpdate := true
+            }
+        }
 
         this.SetConfig("MarqueeWidth", this.WidthEdit.Value)
         this.SetConfig("ArtworkPopupDuration", this.DurEdit.Value)
@@ -256,7 +278,8 @@ class WebNowPlayingPlugin extends OverDockPlugin {
         newPort := this.PortEdit.Value
         if (newPort != this.GetConfig("Port", "8973")) {
             this.SetConfig("Port", newPort)
-            this.ConnectWS()
+            if (this.ServerEnabled)
+                this.ConnectWS()
         }
     }
 

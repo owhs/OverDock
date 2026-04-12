@@ -9,7 +9,6 @@ class SysMonPlugin extends OverDockPlugin {
         this.ShowRAM := this.GetConfig("ShowRAM", 1)
         this.ShowDisk := this.GetConfig("ShowDisk", 1)
         this.ShowNet := this.GetConfig("ShowNet", 1)
-        this.ShowTotalNet := this.GetConfig("ShowTotalNet", 0)
         this.ShowTemps := this.GetConfig("ShowTemps", 1)
 
         this.ShowIcons := this.GetConfig("ShowIcons", 1)
@@ -41,11 +40,11 @@ class SysMonPlugin extends OverDockPlugin {
         }
         if (this.ShowDisk)
             wArr.Push(iDisk "999.9M/s")
-        if (this.ShowNet || this.ShowTotalNet || this.TrackLifetimeNet) {
+        if (this.ShowNet || this.TrackLifetimeNet) {
             netStr := ""
             if (this.ShowNet)
                 netStr .= iNet "999.9M/s"
-            if (this.ShowTotalNet || this.TrackLifetimeNet)
+            if (this.TrackLifetimeNet)
                 netStr .= (netStr ? "  " : "") "(999.9 TB)"
             wArr.Push(netStr)
         }
@@ -98,8 +97,7 @@ class SysMonPlugin extends OverDockPlugin {
         this.AddCheckbox(gui, Round(15 * s), yP, cw, Round(25 * s), this, "ShowDisk", "Disk I/O")
         this.AddCheckbox(gui, Round(15 * s) + cw, yP, cw, Round(25 * s), this, "ShowNet", "Net Speed")
         yP += Round(30 * s)
-        this.AddCheckbox(gui, Round(15 * s), yP, cw, Round(25 * s), this, "ShowTotalNet", "Total Net")
-        this.AddCheckbox(gui, Round(15 * s) + cw, yP, cw, Round(25 * s), this, "ShowTemps", "Temps")
+        this.AddCheckbox(gui, Round(15 * s), yP, cw, Round(25 * s), this, "ShowTemps", "Temps")
         yP += Round(30 * s)
 
         this.AddCheckbox(gui, Round(15 * s), yP, cw, Round(25 * s), this, "TrackLifetimeNet", "Lifetime Net")
@@ -110,12 +108,17 @@ class SysMonPlugin extends OverDockPlugin {
         yP += Round(35 * s)
 
         gui.Add("Text", "x" Round(15 * s) " y" Round(yP + 2 * s) " w" Round(90 * s) " h" Round(25 * s) " 0x200 BackgroundTrans c" Config.Theme.Text, "Net Adapter:")
-        this.NetAdapterStr := this.GetConfig("NetAdapterStr", "Auto")
+        adpConfig := this.GetConfig("NetAdapterStr", "Auto")
+        this.NetAdapterStr := adpConfig
         comps := ["Auto"]
         try {
             for obj in ComObjGet("winmgmts:\\.\root\CIMV2").ExecQuery("SELECT NetConnectionID FROM Win32_NetworkAdapter WHERE NetConnectionID IS NOT NULL")
                 comps.Push(obj.NetConnectionID)
         }
+        
+        if (IsInteger(adpConfig) && adpConfig > 0 && adpConfig <= comps.Length)
+            this.NetAdapterStr := comps[adpConfig]
+
         adpBg := gui.Add("Text", "x" Round(105 * s) " y" yP " w" Round(110 * s) " h" Round(25 * s) " Background" BlendHex(Config.Theme.DropBg, Config.Theme.Text, 15), "")
         this.AdpTxt := gui.Add("Text", "x" Round(110 * s) " y" Round(yP + 3 * s) " w" Round(80 * s) " h" Round(20 * s) " BackgroundTrans c" Config.Theme.Text, this.NetAdapterStr)
         adpArr := gui.Add("Text", "x" Round(195 * s) " y" Round(yP + 3 * s) " w" Round(15 * s) " h" Round(20 * s) " BackgroundTrans c" BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40) " Center", Chr(0x2304))
@@ -204,6 +207,8 @@ class SysMonPlugin extends OverDockPlugin {
     }
 
     SaveAdapterAndReset(*) {
+        if HasProp(this, "AdpTxt") && DllCall("IsWindow", "Ptr", this.AdpTxt.Hwnd)
+            this.NetAdapterStr := this.AdpTxt.Value
         this.SetConfig("NetAdapterStr", this.NetAdapterStr)
         this.LastNetTick := 0
     }
@@ -234,7 +239,6 @@ class SysMonPlugin extends OverDockPlugin {
         this.SetConfig("ShowRAM", this.ShowRAM)
         this.SetConfig("ShowDisk", this.ShowDisk)
         this.SetConfig("ShowNet", this.ShowNet)
-        this.SetConfig("ShowTotalNet", this.ShowTotalNet)
         this.SetConfig("ShowTemps", this.ShowTemps)
 
         this.SetConfig("ShowIcons", this.ShowIcons)
@@ -524,7 +528,7 @@ class SysMonPlugin extends OverDockPlugin {
             items.Push(iDisk . spd "M/s")
         }
 
-        if ((this.ShowNet || this.ShowTotalNet || this.TrackLifetimeNet) && HasProp(this, "DataNet")) {
+        if ((this.ShowNet || this.TrackLifetimeNet) && HasProp(this, "DataNet")) {
             netStr := ""
             if (this.ShowNet) {
                 rate := this.DataNet.RxBps
@@ -535,7 +539,7 @@ class SysMonPlugin extends OverDockPlugin {
                 else
                     netStr .= iNet . Round(rate) "B/s"
             }
-            if (this.ShowTotalNet || this.TrackLifetimeNet) {
+            if (this.TrackLifetimeNet) {
                 if (netStr != "")
                     netStr .= "  "
                 netStr .= "(" this.DataNet.TotalRxStr ")"
