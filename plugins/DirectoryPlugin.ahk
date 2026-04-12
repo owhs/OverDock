@@ -152,6 +152,9 @@ class DirectoryPlugin extends OverDockPlugin {
                     this.RegisterHover(ctrlHwnd, Config.Theme.Text, Config.Theme.IconHover, grp, showSub)
 
                 bg.OnEvent("Click", showSub), iL.OnEvent("Click", showSub), tL.OnEvent("Click", showSub), aL.OnEvent("Click", showSub)
+
+                openDirAct := ((mPath, *) => (this.App.ClosePopup(), Run("explorer.exe `"" mPath "`""))).Bind(itemPath)
+                bg.OnEvent("DoubleClick", openDirAct), iL.OnEvent("DoubleClick", openDirAct), tL.OnEvent("DoubleClick", openDirAct), aL.OnEvent("DoubleClick", openDirAct)
             } else {
                 hideSub := ((mGui, *) => this.HideRecursive(mGui)).Bind(menuGui)
                 this.RegisterHover(bg.Hwnd, Config.Theme.Text, Config.Theme.IconHover, grp, hideSub)
