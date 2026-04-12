@@ -16,6 +16,8 @@ class SysMonPlugin extends OverDockPlugin {
         this.SplitDisplay := this.GetConfig("SplitDisplay", 1)
         this.TickerMode := this.GetConfig("TickerMode", 0)
         this.TrackLifetimeNet := this.GetConfig("TrackLifetimeNet", 0)
+        this.NetTrackMode := this.GetConfig("NetTrackMode", "Self")
+        this.NetAdapterStr := this.GetConfig("NetAdapterStr", "Auto")
         this.LifetimeRxGB := Float(this.GetConfig("LifetimeRxGB", 0.0))
         this.LifetimeTxGB := Float(this.GetConfig("LifetimeTxGB", 0.0))
 
@@ -39,11 +41,11 @@ class SysMonPlugin extends OverDockPlugin {
         }
         if (this.ShowDisk)
             wArr.Push(iDisk "999.9M/s")
-        if (this.ShowNet || this.ShowTotalNet) {
+        if (this.ShowNet || this.ShowTotalNet || this.TrackLifetimeNet) {
             netStr := ""
             if (this.ShowNet)
                 netStr .= iNet "999.9M/s"
-            if (this.ShowTotalNet)
+            if (this.ShowTotalNet || this.TrackLifetimeNet)
                 netStr .= (netStr ? "  " : "") "(999.9 TB)"
             wArr.Push(netStr)
         }
@@ -107,6 +109,46 @@ class SysMonPlugin extends OverDockPlugin {
         AppCursorMap[rstBtn.Hwnd] := 1
         yP += Round(35 * s)
 
+        gui.Add("Text", "x" Round(15 * s) " y" Round(yP + 2 * s) " w" Round(90 * s) " h" Round(25 * s) " 0x200 BackgroundTrans c" Config.Theme.Text, "Net Adapter:")
+        this.NetAdapterStr := this.GetConfig("NetAdapterStr", "Auto")
+        comps := ["Auto"]
+        try {
+            for obj in ComObjGet("winmgmts:\\.\root\CIMV2").ExecQuery("SELECT NetConnectionID FROM Win32_NetworkAdapter WHERE NetConnectionID IS NOT NULL")
+                comps.Push(obj.NetConnectionID)
+        }
+        adpBg := gui.Add("Text", "x" Round(105 * s) " y" yP " w" Round(110 * s) " h" Round(25 * s) " Background" BlendHex(Config.Theme.DropBg, Config.Theme.Text, 15), "")
+        this.AdpTxt := gui.Add("Text", "x" Round(110 * s) " y" Round(yP + 3 * s) " w" Round(80 * s) " h" Round(20 * s) " BackgroundTrans c" Config.Theme.Text, this.NetAdapterStr)
+        adpArr := gui.Add("Text", "x" Round(195 * s) " y" Round(yP + 3 * s) " w" Round(15 * s) " h" Round(20 * s) " BackgroundTrans c" BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40) " Center", Chr(0x2304))
+        
+        actDrop := ObjBindMethod(this.App, "BuildDropdown", gui, adpBg, this.AdpTxt, comps, this, "NetAdapterStr", ObjBindMethod(this, "SaveAdapterAndReset"))
+        adpBg.OnEvent("Click", actDrop), this.AdpTxt.OnEvent("Click", actDrop), adpArr.OnEvent("Click", actDrop)
+        AppCursorMap[adpBg.Hwnd] := 1, AppCursorMap[this.AdpTxt.Hwnd] := 1, AppCursorMap[adpArr.Hwnd] := 1
+        yP += Round(35 * s)
+
+        gui.Add("Text", "x" Round(15 * s) " y" Round(yP + 2 * s) " w" Round(90 * s) " h" Round(25 * s) " 0x200 BackgroundTrans c" Config.Theme.Text, "Net Mode:")
+        this.NetTrackMode := this.GetConfig("NetTrackMode", "Self")
+        isDevMode := (this.NetTrackMode == "Device")
+        togBgCol := BlendHex(Config.Theme.DropBg, Config.Theme.Text, 25)
+
+        gui.SetFont("s" Round(9 * s))
+        this.MBLbl := gui.Add("Text", "x" Round(95 * s) " y" Round(yP + 5 * s) " w" Round(35 * s) " h" Round(20 * s) " BackgroundTrans c" (isDevMode ? BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40) : Config.Theme.Text) " Right", "Self")
+
+        togBg := gui.Add("Text", "x" Round(135 * s) " y" Round(yP + 2 * s) " w" Round(36 * s) " h" Round(22 * s) " Background" togBgCol " 0x0100", "")
+        togBgIn := gui.Add("Text", "x" Round(137 * s) " y" Round(yP + 4 * s) " w" Round(32 * s) " h" Round(18 * s) " Background" (isDevMode ? togBgCol : "1e1e1e") " 0x0100", "")
+        
+        togKnobX := isDevMode ? Round(154 * s) : Round(136 * s)
+        this.TogKnob := gui.Add("Text", "x" togKnobX " y" Round(yP + 4 * s) " w" Round(18 * s) " h" Round(18 * s) " Background" (isDevMode ? "White" : BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40)) " 0x0100", "")
+        
+        this.MALbl := gui.Add("Text", "x" Round(178 * s) " y" Round(yP + 5 * s) " w" Round(55 * s) " h" Round(20 * s) " BackgroundTrans c" (isDevMode ? Config.Theme.Text : BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40)) " Left", "Device")
+        gui.SetFont("s10")
+        
+        toggleFn := ObjBindMethod(this, "ToggleNetMode", togBgIn, this.TogKnob, this.MBLbl, this.MALbl)
+        togBg.OnEvent("Click", toggleFn), togBgIn.OnEvent("Click", toggleFn), this.TogKnob.OnEvent("Click", toggleFn)
+        this.MBLbl.OnEvent("Click", toggleFn), this.MALbl.OnEvent("Click", toggleFn)
+        AppCursorMap[togBg.Hwnd] := 1, AppCursorMap[togBgIn.Hwnd] := 1, AppCursorMap[this.TogKnob.Hwnd] := 1
+        AppCursorMap[this.MBLbl.Hwnd] := 1, AppCursorMap[this.MALbl.Hwnd] := 1
+        yP += Round(35 * s)
+
         gui.Add("Text", "x" Round(15 * s) " y" Round(yP) " w" (dW - Round(30 * s)) " h" Round(1 * s) " Background" BlendHex(Config.Theme.DropBg, Config.Theme.Text, 20), "")
         yP += Round(15 * s)
 
@@ -159,6 +201,32 @@ class SysMonPlugin extends OverDockPlugin {
         AppCursorMap[tBg.Hwnd] := 1, AppCursorMap[this.tTxt.Hwnd] := 1, AppCursorMap[tArr.Hwnd] := 1
 
         return yP + Round(35 * s)
+    }
+
+    SaveAdapterAndReset(*) {
+        this.SetConfig("NetAdapterStr", this.NetAdapterStr)
+        this.LastNetTick := 0
+    }
+
+    ToggleNetMode(bgIn, knob, lblL, lblR, *) {
+        s := this.App.Scale
+        this.NetTrackMode := (this.NetTrackMode == "Device") ? "Self" : "Device"
+        isDevMode := (this.NetTrackMode == "Device")
+        
+        togBgCol := BlendHex(Config.Theme.DropBg, Config.Theme.Text, 25)
+        bgIn.Opt("Background" (isDevMode ? togBgCol : "1e1e1e"))
+        knob.Opt("Background" (isDevMode ? "White" : BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40)))
+        knob.Move(isDevMode ? Round(154 * s) : Round(136 * s))
+        
+        lblL.Opt("c" (isDevMode ? BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40) : Config.Theme.Text))
+        lblR.Opt("c" (isDevMode ? Config.Theme.Text : BlendHex(Config.Theme.Text, Config.Theme.DropBg, 40)))
+        
+        bgIn.Redraw(), knob.Redraw(), lblL.Redraw(), lblR.Redraw()
+        this.SetConfig("NetTrackMode", this.NetTrackMode)
+        
+        if (!isDevMode) {
+            this.LastNetTick := 0
+        }
     }
 
     SaveCustomConfig() {
@@ -276,13 +344,49 @@ class SysMonPlugin extends OverDockPlugin {
         DllCall("Iphlpapi\GetIfTable", "Ptr", 0, "UInt*", &size, "Int", 0)
         buf := Buffer(size, 0)
         rx := 0, tx := 0
+        
+        adpForce := this.GetConfig("NetAdapterStr", "Auto")
+        targetIdx := -1
+        
+        if (!HasProp(this, "AdpMap") || A_TickCount - this.LastAdpTick > 15000) {
+            this.AdpMap := Map()
+            try {
+                for obj in ComObjGet("winmgmts:\\.\root\CIMV2").ExecQuery("SELECT NetConnectionID, InterfaceIndex FROM Win32_NetworkAdapter WHERE NetConnectionID IS NOT NULL")
+                    this.AdpMap[obj.InterfaceIndex] := obj.NetConnectionID
+            }
+            this.LastAdpTick := A_TickCount
+        }
+
+        if (adpForce != "Auto") {
+            for k, v in this.AdpMap {
+                if (v == adpForce) {
+                    targetIdx := k
+                    break
+                }
+            }
+        } else {
+            bestIdx := 0
+            if (DllCall("Iphlpapi\GetBestInterface", "UInt", 0, "UInt*", &bestIdx) == 0)
+                targetIdx := bestIdx
+        }
+
         if (DllCall("Iphlpapi\GetIfTable", "Ptr", buf, "UInt*", &size, "Int", 0) == 0) {
             entries := NumGet(buf, 0, "UInt"), offset := 4
             Loop entries {
+                idx := NumGet(buf, offset + 512, "UInt")
                 type := NumGet(buf, offset + 516, "UInt")
-                if (type == 6 || type == 71) {
-                    rx += NumGet(buf, offset + 552, "UInt")
-                    tx += NumGet(buf, offset + 576, "UInt")
+                
+                if (targetIdx != -1) {
+                    if (idx == targetIdx) {
+                        rx += NumGet(buf, offset + 552, "UInt")
+                        tx += NumGet(buf, offset + 576, "UInt")
+                    }
+                } else {
+                    ; Fallback ONLY sum physical/primary interfaces that exist in AdpMap
+                    if (this.AdpMap.Has(idx) && (type == 6 || type == 71)) {
+                        rx += NumGet(buf, offset + 552, "UInt")
+                        tx += NumGet(buf, offset + 576, "UInt")
+                    }
                 }
                 offset += 860
             }
@@ -293,23 +397,46 @@ class SysMonPlugin extends OverDockPlugin {
         if (HasProp(this, "LastNetTick") && this.LastNetTick > 0) {
             dt := (tick - this.LastNetTick) / 1000.0
             if (dt > 0) {
-                rxRate := (rx - this.LastNetRx) / dt
-                if (rxRate < 0)
-                    rxRate := ((0xFFFFFFFF - this.LastNetRx) + rx) / dt
-                txRate := (tx - this.LastNetTx) / dt
-                if (txRate < 0)
-                    txRate := ((0xFFFFFFFF - this.LastNetTx) + tx) / dt
+                deltaRateRx := rx - this.LastNetRx
+                if (deltaRateRx < 0) {
+                    if (this.LastNetRx > 0xD0000000)
+                        deltaRateRx := (0xFFFFFFFF - this.LastNetRx) + rx
+                    else
+                        deltaRateRx := 0
+                }
+                rxRate := deltaRateRx / dt
+                
+                deltaRateTx := tx - this.LastNetTx
+                if (deltaRateTx < 0) {
+                    if (this.LastNetTx > 0xD0000000)
+                        deltaRateTx := (0xFFFFFFFF - this.LastNetTx) + tx
+                    else
+                        deltaRateTx := 0
+                }
+                txRate := deltaRateTx / dt
             }
         }
 
-        if (this.TrackLifetimeNet && this.LastNetTick > 0) {
+        isDeviceMode := (!HasProp(this, "NetTrackMode") || this.NetTrackMode == "Device")
+
+        if (this.TrackLifetimeNet && this.LastNetTick > 0 && !isDeviceMode) {
             deltaRx := rx - this.LastNetRx
-            if (deltaRx < 0) deltaRx := (0xFFFFFFFF - this.LastNetRx) + rx
-                this.LifetimeRxGB += (deltaRx / 1073741824)
+            if (deltaRx < 0) {
+                if (this.LastNetRx > 0xD0000000)
+                    deltaRx := (0xFFFFFFFF - this.LastNetRx) + rx
+                else
+                    deltaRx := 0
+            }
+            this.LifetimeRxGB += (deltaRx / 1073741824)
 
             deltaTx := tx - this.LastNetTx
-            if (deltaTx < 0) deltaTx := (0xFFFFFFFF - this.LastNetTx) + tx
-                this.LifetimeTxGB += (deltaTx / 1073741824)
+            if (deltaTx < 0) {
+                if (this.LastNetTx > 0xD0000000)
+                    deltaTx := (0xFFFFFFFF - this.LastNetTx) + tx
+                else
+                    deltaTx := 0
+            }
+            this.LifetimeTxGB += (deltaTx / 1073741824)
 
             if (tick - this.LastNetSaveTick > 60000) {
                 this.SetConfig("LifetimeRxGB", this.LifetimeRxGB)
@@ -320,11 +447,26 @@ class SysMonPlugin extends OverDockPlugin {
 
         this.LastNetRx := rx, this.LastNetTx := tx, this.LastNetTick := tick
 
-        targetRxGB := this.TrackLifetimeNet ? this.LifetimeRxGB : (rx / 1073741824)
-        targetTxGB := this.TrackLifetimeNet ? this.LifetimeTxGB : (tx / 1073741824)
+        targetRxGB := this.TrackLifetimeNet ? (isDeviceMode ? rx / 1073741824 : this.LifetimeRxGB) : (rx / 1073741824)
+        targetTxGB := this.TrackLifetimeNet ? (isDeviceMode ? tx / 1073741824 : this.LifetimeTxGB) : (tx / 1073741824)
 
-        rxStr := (targetRxGB >= 1000) ? Round(targetRxGB / 1024, 2) " TB" : Round(targetRxGB, 2) " GB"
-        txStr := (targetTxGB >= 1000) ? Round(targetTxGB / 1024, 2) " TB" : Round(targetTxGB, 2) " GB"
+        if (targetRxGB >= 1000)
+            rxStr := Round(targetRxGB / 1024, 2) " TB"
+        else if (targetRxGB >= 1)
+            rxStr := Round(targetRxGB, 2) " GB"
+        else if (targetRxGB >= 0.0009765625)
+            rxStr := Round(targetRxGB * 1024, 2) " MB"
+        else
+            rxStr := Round(targetRxGB * 1048576, 2) " KB"
+
+        if (targetTxGB >= 1000)
+            txStr := Round(targetTxGB / 1024, 2) " TB"
+        else if (targetTxGB >= 1)
+            txStr := Round(targetTxGB, 2) " GB"
+        else if (targetTxGB >= 0.0009765625)
+            txStr := Round(targetTxGB * 1024, 2) " MB"
+        else
+            txStr := Round(targetTxGB * 1048576, 2) " KB"
 
         return { RxBps: rxRate, TxBps: txRate, TotalRxGB: targetRxGB, TotalRxStr: rxStr, TotalTxGB: targetTxGB, TotalTxStr: txStr }
     }
@@ -336,7 +478,7 @@ class SysMonPlugin extends OverDockPlugin {
             this.DataRAM := this.GetRAM()
         if (this.ShowDisk)
             this.DataDisk := this.GetDisk()
-        if (this.ShowNet || this.ShowTotalNet)
+        if (this.ShowNet || this.ShowTotalNet || this.TrackLifetimeNet)
             this.DataNet := this.GetNet()
         if (this.ShowTemps)
             this.DataTemps := HardwareTemp.GetAll()
@@ -382,7 +524,7 @@ class SysMonPlugin extends OverDockPlugin {
             items.Push(iDisk . spd "M/s")
         }
 
-        if ((this.ShowNet || this.ShowTotalNet) && HasProp(this, "DataNet")) {
+        if ((this.ShowNet || this.ShowTotalNet || this.TrackLifetimeNet) && HasProp(this, "DataNet")) {
             netStr := ""
             if (this.ShowNet) {
                 rate := this.DataNet.RxBps
@@ -393,7 +535,7 @@ class SysMonPlugin extends OverDockPlugin {
                 else
                     netStr .= iNet . Round(rate) "B/s"
             }
-            if (this.ShowTotalNet) {
+            if (this.ShowTotalNet || this.TrackLifetimeNet) {
                 if (netStr != "")
                     netStr .= "  "
                 netStr .= "(" this.DataNet.TotalRxStr ")"
