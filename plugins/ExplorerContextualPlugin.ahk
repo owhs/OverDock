@@ -41,17 +41,30 @@ class ExplorerContextualPlugin extends OverDockPlugin {
         try {
             hwnd := WinGetID("A")
             cls := WinGetClass(hwnd)
+            title := WinGetTitle(hwnd)
             path := ""
+            
             if (cls == "CabinetWClass") {
-                for window in ComObject("Shell.Application").Windows {
-                    if (window.HWND == hwnd) {
-                        path := window.Document.Folder.Self.Path
-                        break
+                if (HasProp(this, "LastHwnd") && this.LastHwnd == hwnd && HasProp(this, "LastTitle") && this.LastTitle == title && HasProp(this, "SavedPath")) {
+                    path := this.SavedPath
+                } else {
+                    for window in ComObject("Shell.Application").Windows {
+                        if (window.HWND == hwnd) {
+                            path := window.Document.Folder.Self.Path
+                            break
+                        }
                     }
+                    this.LastHwnd := hwnd
+                    this.LastTitle := title
+                    this.SavedPath := path
                 }
             } else {
                 cls := ""
+                this.LastHwnd := ""
+                this.LastTitle := ""
+                this.SavedPath := ""
             }
+            
             if (cls != ExplorerContextualPlugin.ActiveClass || path != ExplorerContextualPlugin.ActivePath) {
                 ExplorerContextualPlugin.ActiveClass := cls
                 ExplorerContextualPlugin.ActivePath := path
@@ -61,6 +74,9 @@ class ExplorerContextualPlugin extends OverDockPlugin {
             if (ExplorerContextualPlugin.ActiveClass != "") {
                 ExplorerContextualPlugin.ActiveClass := ""
                 ExplorerContextualPlugin.ActivePath := ""
+                this.LastHwnd := ""
+                this.LastTitle := ""
+                this.SavedPath := ""
                 this.App.Reflow()
             }
         }
