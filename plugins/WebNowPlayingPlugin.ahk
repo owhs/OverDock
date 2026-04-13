@@ -296,7 +296,7 @@ class WebNowPlayingPlugin extends OverDockPlugin {
 
     MoveCtrls(x, w) {
         if HasProp(this, "TrackTxt")
-            this.TrackTxt.Move(x, , w)
+            try this.TrackTxt.Move(x, , w)
     }
 
     TickMarquee() {

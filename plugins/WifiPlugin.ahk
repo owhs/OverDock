@@ -94,11 +94,14 @@ class WifiPlugin extends OverDockPlugin {
     MoveCtrls(x, w) {
         s := this.App.Scale
         if HasProp(this, "Txt") {
-            this.Btn.Move(x, , Round(35 * s))
-            tw := this.App.MeasureTextWidth(this.Txt.Value "...", "s10 w500 q5", Config.Theme.Font)
-            this.Txt.Move(x + Round(40 * s), , tw)
+            try this.Btn.Move(x, , Round(35 * s))
+            try {
+                tw := this.App.MeasureTextWidth(this.Txt.Value "...", "s10 w500 q5", Config.Theme.Font)
+                this.Txt.Move(x + Round(40 * s), , tw)
+            }
         } else {
-            this.Btn.Move(x, , w)
+            if HasProp(this, "Btn")
+                try this.Btn.Move(x, , w)
         }
     }
     ShowWifiList() {
