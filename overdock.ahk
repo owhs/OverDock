@@ -364,9 +364,9 @@ class OverDockApp {
         cX := Round(10 * s)
         hasLeftOfl := HasProp(this, "OflLeftBtn")
         if (hasLeftOfl && alignOuter) {
-            this.OflLeftBtn.Move(cX, , Round(35 * s))
+            try this.OflLeftBtn.Move(cX, , Round(35 * s))
             if HasProp(this, "OflLeftDbgBox")
-                this.OflLeftDbgBox.Move(cX, , Round(35 * s))
+                try this.OflLeftDbgBox.Move(cX, , Round(35 * s))
             cX += Round(35 * s) + space
         }
         for p in LeftPlugins {
@@ -377,9 +377,9 @@ class OverDockApp {
                 p.SetVisible(true)
                 pL := Round(p.PadL * s), pR := Round(p.PadR * s)
                 if HasMethod(p, "MoveCtrls")
-                    p.MoveCtrls(cX + pL, Max(0, w - pL - pR))
+                    try p.MoveCtrls(cX + pL, Max(0, w - pL - pR))
                 if HasProp(p, "DbgBox")
-                    p.DbgBox.Move(cX + pL, , Max(0, w - pL - pR))
+                    try p.DbgBox.Move(cX + pL, , Max(0, w - pL - pR))
                 cX += w + space
             } else {
                 if (w == 0 || modePaged)
@@ -387,9 +387,9 @@ class OverDockApp {
             }
         }
         if (hasLeftOfl && !alignOuter) {
-            this.OflLeftBtn.Move(cX, , Round(35 * s))
+            try this.OflLeftBtn.Move(cX, , Round(35 * s))
             if HasProp(this, "OflLeftDbgBox")
-                this.OflLeftDbgBox.Move(cX, , Round(35 * s))
+                try this.OflLeftDbgBox.Move(cX, , Round(35 * s))
         }
 
         this.EvalOverflowMode(RightPlugins, &modePaged, &alignOuter)
@@ -397,9 +397,9 @@ class OverDockApp {
         hasRightOfl := HasProp(this, "OflRightBtn")
         if (hasRightOfl && !alignOuter) {
             cX -= Round(35 * s)
-            this.OflRightBtn.Move(cX, , Round(35 * s))
+            try this.OflRightBtn.Move(cX, , Round(35 * s))
             if HasProp(this, "OflRightDbgBox")
-                this.OflRightDbgBox.Move(cX, , Round(35 * s))
+                try this.OflRightDbgBox.Move(cX, , Round(35 * s))
             cX -= space
         }
         for p in RightPlugins {
@@ -411,9 +411,9 @@ class OverDockApp {
                 cX -= w
                 pL := Round(p.PadL * s), pR := Round(p.PadR * s)
                 if HasMethod(p, "MoveCtrls")
-                    p.MoveCtrls(cX + pL, Max(0, w - pL - pR))
+                    try p.MoveCtrls(cX + pL, Max(0, w - pL - pR))
                 if HasProp(p, "DbgBox")
-                    p.DbgBox.Move(cX + pL, , Max(0, w - pL - pR))
+                    try p.DbgBox.Move(cX + pL, , Max(0, w - pL - pR))
                 cX -= space
             } else {
                 if (w == 0 || modePaged)
@@ -422,9 +422,9 @@ class OverDockApp {
         }
         if (hasRightOfl && alignOuter) {
             cX -= Round(35 * s)
-            this.OflRightBtn.Move(cX, , Round(35 * s))
+            try this.OflRightBtn.Move(cX, , Round(35 * s))
             if HasProp(this, "OflRightDbgBox")
-                this.OflRightDbgBox.Move(cX, , Round(35 * s))
+                try this.OflRightDbgBox.Move(cX, , Round(35 * s))
         }
 
         hasCenterOfl := HasProp(this, "OflCenterBtn")
@@ -441,9 +441,9 @@ class OverDockApp {
                 p.SetVisible(true)
                 pL := Round(p.PadL * s), pR := Round(p.PadR * s)
                 if HasMethod(p, "MoveCtrls")
-                    p.MoveCtrls(cX + pL, Max(0, w - pL - pR))
+                    try p.MoveCtrls(cX + pL, Max(0, w - pL - pR))
                 if HasProp(p, "DbgBox")
-                    p.DbgBox.Move(cX + pL, , Max(0, w - pL - pR))
+                    try p.DbgBox.Move(cX + pL, , Max(0, w - pL - pR))
                 cX += w + space
             } else {
                 if (w == 0 || modePaged)
@@ -452,7 +452,7 @@ class OverDockApp {
         }
         if (hasCenterOfl) {
             btnX := alignOuter ? (this.W / 2) - (activeCW / 2) - Round(35 * s) - Round(10 * s) : (this.W / 2) + (activeCW / 2) + Round(10 * s)
-            this.OflCenterBtn.Move(btnX, , Round(35 * s))
+            try this.OflCenterBtn.Move(btnX, , Round(35 * s))
         }
 
         for group in [LeftPlugins, CenterPlugins, RightPlugins] {
